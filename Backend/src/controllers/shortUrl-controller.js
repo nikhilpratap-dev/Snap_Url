@@ -8,7 +8,6 @@ export const createShortUrl=wrapAsync(async(req,res,next)=>{
     
         const {url}=req.body
         const shortedUrl= await createShortUrlwithoutUser(url);
-        console.log(process.env.APP_URL + shortedUrl);
 
         const baseUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
         res.send(`${baseUrl}/${shortedUrl}`);
@@ -25,7 +24,5 @@ export const redirectFromShortUrl=wrapAsync(async(req,res)=>{
             message: "Short URL not found"
         });
     }
-
-    console.log(url.full_url);
     return res.redirect(url.full_url);
 });
