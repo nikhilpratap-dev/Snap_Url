@@ -4,6 +4,7 @@ import Joi from "joi";
 export const createShortUrlDto = Joi.object({
   url: Joi.string()
     .trim()
+    .max(2048)
     .uri({
       scheme: ["http", "https"], // Sirf http aur https allow karega (no javascript: or ftp:)
     })

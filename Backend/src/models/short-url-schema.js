@@ -22,7 +22,7 @@ const shortUrlSchema=new mongoose.Schema({
         ref : "user"
     }
 
-});
+},{timestamps : true});
 
 const short_url=mongoose.model("short_url",shortUrlSchema);
 

@@ -8,6 +8,7 @@ app.use(cors({
     methods: ["GET", "POST"],
     credentials: true
 }));
+import helmet from "helmet"
 
 
 
@@ -22,9 +23,15 @@ import { validate } from "./src/middlewares/validate.js";
 import { redirectShortUrlDto } from "./src/dto/shortUrl-dto.js";
 import { createUrlLimiter } from "./src/utils/helper.js";
 
+app.set("trust proxy", 1);
+app.use(helmet());
 
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+app.use(express.json({limit : "20kb"}));
+app.use(express.urlencoded({extended:true, limit : "20kb"}));
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: true, message: "ok" });
+});
 
 
 app.use("/api/create",createUrlLimiter, short_url);
