@@ -1,17 +1,29 @@
 export const errorHandler=(err,req,res,next)=>{
-    if(err instanceof AppError){
-        return res.status(err.statusCode).json({
-            status:false,
-            message:err.message,
+    let statusCode = err.statusCode || (
+        err.name === "TokenExpiredError" || err.name === "JsonWebTokenError" ? 401 :
+        err.code === 11000 ? 409 : 500
+    );
+
+    let message = err.message;
+    if (err.name === "TokenExpiredError") message = "Token expired";
+    else if (err.name === "JsonWebTokenError") message = "Invalid token";
+    else if (err.code === 11000) message = "Resource already exists";
+
+    if (statusCode !== 500) {
+        return res.status(statusCode).json({
+            status: false,
+            success: false,
+            message: message || "Request failed"
         });
     }
 
     console.error(err);
     const isProduction = process.env.NODE_ENV === "production";
-        res.status(500).json({
-            status : false,
-            message : isProduction ? "Internal server error" : err.message,
-        });
+    res.status(500).json({
+        status: false,
+        success: false,
+        message: isProduction ? "Internal server error" : message,
+    });
 };
 
 export class AppError extends Error{

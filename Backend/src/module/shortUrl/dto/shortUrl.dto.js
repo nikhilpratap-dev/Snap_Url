@@ -1,12 +1,12 @@
 import Joi from "joi";
 
-// 1. URL Shorten karne ke liye DTO (Body validation)
+// 1. Body validation for creating a short URL
 export const createShortUrlDto = Joi.object({
   url: Joi.string()
     .trim()
     .max(2048)
     .uri({
-      scheme: ["http", "https"], // Sirf http aur https allow karega (no javascript: or ftp:)
+      scheme: ["http", "https"],
     })
     .required()
     .messages({
@@ -17,7 +17,7 @@ export const createShortUrlDto = Joi.object({
     }),
 });
 
-// 2. Redirect ke liye ID DTO (Params validation)
+// 2. Params validation for redirecting via short code
 export const redirectShortUrlDto = Joi.object({
   id: Joi.string()
     .pattern(/^[a-zA-Z0-9_-]{5,10}$/)
@@ -28,3 +28,4 @@ export const redirectShortUrlDto = Joi.object({
       "any.required": "Short URL ID is required",
     }),
 });
+
