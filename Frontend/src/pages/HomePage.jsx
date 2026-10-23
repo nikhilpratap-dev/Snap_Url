@@ -4,11 +4,17 @@ import UrlForm from "../components/UrlForm";
 import RecentLinks from "../components/RecentLinks";
 import Features from "../components/Features";
 import Footer from "../components/Footer";
+import AuthModal from "../components/AuthModal";
+import { useAuth } from "../context/AuthContext";
+import { getMyLinksApi, deleteMyLinkApi } from "../apis/auth-api";
 
 const LOCAL_STORAGE_KEY = "snapurl_recent_links";
 
 const HomePage = () => {
-    const [recentLinks, setRecentLinks] = useState(() => {
+    const { user, isGuest, openAuthModal } = useAuth();
+
+    // Local state for guests
+    const [localLinks, setLocalLinks] = useState(() => {
         try {
             const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
             return saved ? JSON.parse(saved) : [];
@@ -17,33 +23,86 @@ const HomePage = () => {
         }
     });
 
+    // Cloud links for logged-in user
+    const [cloudLinks, setCloudLinks] = useState([]);
+    const [loadingLinks, setLoadingLinks] = useState(false);
+
+    // Save guest links in local storage
     useEffect(() => {
-        try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(recentLinks));
-        } catch {
-            // Local storage might be full or restricted
+        if (isGuest) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localLinks));
+            } catch {
+                // Ignore storage limits
+            }
         }
-    }, [recentLinks]);
+    }, [localLinks, isGuest]);
+
+    // Fetch cloud links when user logs in
+    useEffect(() => {
+        const fetchUserLinks = async () => {
+            if (user) {
+                setLoadingLinks(true);
+                try {
+                    const res = await getMyLinksApi();
+                    if (res?.data) {
+                        setCloudLinks(res.data);
+                    }
+                } catch (err) {
+                    console.error("Failed to load user links:", err);
+                } finally {
+                    setLoadingLinks(false);
+                }
+            }
+        };
+        fetchUserLinks();
+    }, [user]);
 
     const handleLinkCreated = (newLink) => {
-        setRecentLinks((prev) => {
-            // Keep at most 10 recent links, prevent duplicate short links
-            const filtered = prev.filter((item) => item.shortUrl !== newLink.shortUrl);
-            return [newLink, ...filtered].slice(0, 10);
-        });
+        if (user) {
+            setCloudLinks((prev) => [
+                {
+                    id: newLink.id || Date.now().toString(),
+                    shortUrl: newLink.shortUrl,
+                    originalUrl: newLink.originalUrl,
+                    clicks: 0,
+                    createdAt: newLink.createdAt || new Date().toISOString(),
+                },
+                ...prev.filter((item) => item.shortUrl !== newLink.shortUrl),
+            ]);
+        } else {
+            setLocalLinks((prev) => {
+                const filtered = prev.filter((item) => item.shortUrl !== newLink.shortUrl);
+                return [newLink, ...filtered].slice(0, 10);
+            });
+        }
     };
 
     const handleClearHistory = () => {
-        setRecentLinks([]);
-        try {
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-        } catch {
-            //
+        if (isGuest) {
+            setLocalLinks([]);
+            try {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+            } catch {
+                //
+            }
+        } else {
+            // For logged in users, just clear local view or reload
+            setCloudLinks([]);
         }
     };
 
-    const handleDeleteLink = (id) => {
-        setRecentLinks((prev) => prev.filter((item) => item.id !== id));
+    const handleDeleteLink = async (id) => {
+        if (user) {
+            try {
+                await deleteMyLinkApi(id);
+                setCloudLinks((prev) => prev.filter((item) => item.id !== id));
+            } catch (err) {
+                console.error("Delete failed:", err);
+            }
+        } else {
+            setLocalLinks((prev) => prev.filter((item) => item.id !== id));
+        }
     };
 
     return (
@@ -60,7 +119,29 @@ const HomePage = () => {
                 <Navbar />
 
                 {/* Main Content Area */}
-                <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-12 relative z-10 flex flex-col items-center">
+                <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-12 relative z-10 flex flex-col items-center">
+                    {/* Guest Mode Callout Banner */}
+                    {isGuest && (
+                        <div className="w-full max-w-2xl mb-8 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900/80 to-purple-950/60 border border-indigo-500/20 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center space-x-2.5 text-slate-300">
+                                <span className="p-1 rounded-lg bg-indigo-500/20 text-indigo-400">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                </span>
+                                <span>
+                                    <strong>Guest Mode Active:</strong> Shorten unlimited links instantly with zero signup.
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => openAuthModal("register")}
+                                className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold transition shadow-sm"
+                            >
+                                Free Sign Up to Sync Links
+                            </button>
+                        </div>
+                    )}
+
                     {/* Hero Badge */}
                     <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 mb-6 shadow-sm">
                         <span className="flex h-2 w-2 relative">
@@ -88,9 +169,10 @@ const HomePage = () => {
                     {/* Main URL Form Component */}
                     <UrlForm onLinkCreated={handleLinkCreated} />
 
-                    {/* Recent Links History */}
+                    {/* Links History */}
                     <RecentLinks
-                        links={recentLinks}
+                        links={user ? cloudLinks : localLinks}
+                        isCloudSynced={!!user}
                         onClearHistory={handleClearHistory}
                         onDeleteLink={handleDeleteLink}
                     />
@@ -99,6 +181,9 @@ const HomePage = () => {
                     <Features />
                 </main>
             </div>
+
+            {/* Auth Modal */}
+            <AuthModal />
 
             {/* Footer */}
             <Footer />

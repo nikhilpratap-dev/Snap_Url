@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
-const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
+const RecentLinks = ({ links, onClearHistory, onDeleteLink, isCloudSynced }) => {
+    const { isGuest, openAuthModal } = useAuth();
     const [copiedId, setCopiedId] = useState(null);
 
     const handleCopy = async (id, shortUrl) => {
@@ -26,26 +28,48 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
 
     return (
         <div className="w-full mt-10">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div className="flex items-center space-x-2">
                     <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3 className="text-base font-bold text-slate-200">Recent Short Links</h3>
+                    <h3 className="text-base font-bold text-slate-200">
+                        {isCloudSynced ? "My Saved Links (Cloud)" : "Recent Links (Guest Session)"}
+                    </h3>
                     <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-medium">
                         {links.length}
                     </span>
+                    {isCloudSynced ? (
+                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            Synced to Account
+                        </span>
+                    ) : (
+                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/60">
+                            Local History
+                        </span>
+                    )}
                 </div>
 
-                <button
-                    onClick={onClearHistory}
-                    className="text-xs text-slate-400 hover:text-rose-400 transition flex items-center space-x-1"
-                >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>Clear All</span>
-                </button>
+                <div className="flex items-center space-x-3 self-end sm:self-auto">
+                    {isGuest && (
+                        <button
+                            onClick={() => openAuthModal("register")}
+                            className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium"
+                        >
+                            Sync links with free account
+                        </button>
+                    )}
+                    <button
+                        onClick={onClearHistory}
+                        className="text-xs text-slate-400 hover:text-rose-400 transition flex items-center space-x-1"
+                        title={isCloudSynced ? "Refresh list" : "Clear local history"}
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>{isCloudSynced ? "Clear All" : "Clear History"}</span>
+                    </button>
+                </div>
             </div>
 
             <div className="space-y-2.5">
@@ -55,7 +79,7 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
                         className="p-3.5 sm:p-4 bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition group backdrop-blur-sm"
                     >
                         <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2.5">
                                 <a
                                     href={item.shortUrl}
                                     target="_blank"
@@ -64,6 +88,15 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
                                 >
                                     {item.shortUrl}
                                 </a>
+                                {item.clicks !== undefined && (
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center space-x-1">
+                                        <svg className="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <span>{item.clicks} {item.clicks === 1 ? "click" : "clicks"}</span>
+                                    </span>
+                                )}
                                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                     Active
                                 </span>
@@ -116,7 +149,7 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
                             <button
                                 onClick={() => onDeleteLink(item.id)}
                                 className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition"
-                                title="Delete from history"
+                                title="Delete"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -131,4 +164,3 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink }) => {
 };
 
 export default RecentLinks;
-
