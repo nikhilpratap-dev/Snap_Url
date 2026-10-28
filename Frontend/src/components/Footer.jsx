@@ -8,6 +8,12 @@ const Footer = () => {
                     <span>Open-source URL Shortener</span>
                 </div>
 
+                <div className="flex items-center space-x-2">
+                    <span className="font-bold text-slate-300">Developed by</span>
+                    <span>•</span>
+                    <a href="https://github.com/nikhilpratap-dev/Snap_Url">Nikhil Pratap</a>
+                </div>
+
                 <div className="flex items-center space-x-3">
                     <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">React 19</span>
                     <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">Tailwind CSS</span>
