@@ -64,6 +64,37 @@ const verifyEmail = async (token)=>{
         $unset:{verificationToken:1, verificationTokenExpires:1}
     });
 }
+
+// resend verification email
+const resendVerification = async (email) => {
+    const trimmedEmail = String(email || "").trim().toLowerCase();
+    if (!trimmedEmail) {
+        throw ApiError.badRequest("Email is required");
+    }
+
+    const user = await User.findOne({ email: trimmedEmail });
+    if (!user) {
+        throw ApiError.notFound("No account found with this email address");
+    }
+
+    if (user.isVerified) {
+        throw ApiError.badRequest("This email is already verified. You can log in directly.");
+    }
+
+    const { rawToken, hashedToken } = generateToken();
+    user.verificationToken = hashedToken;
+    user.verificationTokenExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    try {
+        await verificationEmail(trimmedEmail, rawToken);
+    } catch (err) {
+        console.error("Failed to resend verification email:", err.message);
+        throw ApiError.badRequest("Failed to send verification email. Please try again later.");
+    }
+};
+
 //log in
 
 const logIn = async ({email, password})=>{
@@ -171,6 +202,7 @@ export {
     register,
     logIn,
     verifyEmail,
+    resendVerification,
     forgetPassword,
     refresh,
     logout,

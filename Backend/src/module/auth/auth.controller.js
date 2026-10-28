@@ -25,9 +25,14 @@ const logIn =async(req,res)=>{
 const refreshToken = async (req,res) =>{
     const token = req.cookies?.refreshToken;
     const {accessToken, refreshToken:newRefreshToken} = await Services.refresh(token);
-    res.cookie("refreshToken", refreshToken, cookieOption);
+    res.cookie("refreshToken", newRefreshToken, cookieOption);
 
     ApiResponse.ok(res,"refreshed token",{accessToken});
+}
+
+const resendVerification = async (req,res)=>{
+    await Services.resendVerification(req.body.email);
+    ApiResponse.ok(res, "Verification email sent successfully. Please check your inbox.");
 }
 
 const forgetPassword = async (req,res)=>{
@@ -90,6 +95,7 @@ export {
     register,
     logIn,
     refreshToken,
+    resendVerification,
     forgetPassword,
     logOut,
     verifyEmail,
