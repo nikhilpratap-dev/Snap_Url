@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const RecentLinks = ({ links, onClearHistory, onDeleteLink, isCloudSynced }) => {
+const RecentLinks = ({ links, onClearHistory, onDeleteLink, isCloudSynced, loading }) => {
     const { isGuest, openAuthModal } = useAuth();
     const [copiedId, setCopiedId] = useState(null);
 
@@ -22,7 +22,45 @@ const RecentLinks = ({ links, onClearHistory, onDeleteLink, isCloudSynced }) => 
         }
     };
 
+    if (loading) {
+        return (
+            <div className="w-full mt-10 space-y-3">
+                <div className="flex items-center space-x-2 mb-4">
+                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-pulse"></div>
+                    <div className="h-4 w-36 bg-slate-800 rounded animate-pulse"></div>
+                </div>
+                {[1, 2].map((n) => (
+                    <div
+                        key={n}
+                        className="p-4 bg-slate-900/40 border border-slate-800/60 rounded-xl animate-pulse flex items-center justify-between"
+                    >
+                        <div className="space-y-2 flex-1">
+                            <div className="h-4 w-44 bg-slate-800 rounded"></div>
+                            <div className="h-3 w-64 bg-slate-800/60 rounded"></div>
+                        </div>
+                        <div className="h-8 w-20 bg-slate-800 rounded-lg"></div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     if (!links || links.length === 0) {
+        if (isCloudSynced) {
+            return (
+                <div className="w-full mt-10 p-6 bg-slate-900/30 border border-slate-800/60 rounded-2xl text-center">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-200">No saved links yet</h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                        Any links you create while signed in to this account will appear here.
+                    </p>
+                </div>
+            );
+        }
         return null;
     }
 

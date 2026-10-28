@@ -38,25 +38,47 @@ const HomePage = () => {
         }
     }, [localLinks, isGuest]);
 
-    // Fetch cloud links when user logs in
+    // Fetch cloud links when user logs in, and ALWAYS clear when user changes/logs out
     useEffect(() => {
+        const currentUserId = user?.id || user?._id;
+        if (!currentUserId) {
+            setCloudLinks([]);
+            setLoadingLinks(false);
+            return;
+        }
+
+        let isMounted = true;
+        setCloudLinks([]);
+        setLoadingLinks(true);
+
         const fetchUserLinks = async () => {
-            if (user) {
-                setLoadingLinks(true);
-                try {
-                    const res = await getMyLinksApi();
-                    if (res?.data) {
+            try {
+                const res = await getMyLinksApi();
+                if (isMounted) {
+                    if (res?.data && Array.isArray(res.data)) {
                         setCloudLinks(res.data);
+                    } else {
+                        setCloudLinks([]);
                     }
-                } catch (err) {
+                }
+            } catch (err) {
+                if (isMounted) {
                     console.error("Failed to load user links:", err);
-                } finally {
+                    setCloudLinks([]);
+                }
+            } finally {
+                if (isMounted) {
                     setLoadingLinks(false);
                 }
             }
         };
+
         fetchUserLinks();
-    }, [user]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.id || user?._id]);
 
     const handleLinkCreated = (newLink) => {
         if (user) {
@@ -173,6 +195,7 @@ const HomePage = () => {
                     <RecentLinks
                         links={user ? cloudLinks : localLinks}
                         isCloudSynced={!!user}
+                        loading={loadingLinks}
                         onClearHistory={handleClearHistory}
                         onDeleteLink={handleDeleteLink}
                     />

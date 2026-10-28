@@ -30,6 +30,14 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         };
         restoreSession();
+
+        const handleSessionExpired = () => {
+            localStorage.removeItem("snapurl_token");
+            setToken(null);
+            setUser(null);
+        };
+        window.addEventListener("snapurl_session_expired", handleSessionExpired);
+        return () => window.removeEventListener("snapurl_session_expired", handleSessionExpired);
     }, [token]);
 
     const login = async (email, password) => {
